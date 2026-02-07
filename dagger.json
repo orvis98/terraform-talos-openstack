@@ -1,0 +1,8 @@
+{
+  "name": "terraform-talos-openstack",
+  "engineVersion": "v0.19.11",
+  "sdk": {
+    "source": "go"
+  },
+  "source": ".dagger"
+}
