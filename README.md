@@ -11,7 +11,7 @@ Terraform module for deploying Talos Linux Kubernetes clusters on OpenStack.
 
 ```hcl
 module "talos_cluster" {
-  source = "github.com/yourusername/terraform-openstack-talos"
+  source = "git::https://github.com/orvis98/terraform-talos-openstack.git"
 
   cluster_name          = "my-cluster"
   external_network_name = "ext-net"
@@ -206,7 +206,7 @@ The module creates an OpenStack load balancer with:
 
 ```hcl
 module "talos_cluster" {
-  source = "github.com/yourusername/terraform-openstack-talos"
+  source = "github.com/orvis98/terraform-openstack-talos"
 
   cluster_name          = "demo"
   external_network_name = "ext-net"
@@ -222,7 +222,7 @@ module "talos_cluster" {
 
 ```hcl
 module "talos_cluster" {
-  source = "github.com/yourusername/terraform-openstack-talos"
+  source = "github.com/orvis98/terraform-openstack-talos"
 
   cluster_name  = "production"
   talos_version = "v1.12.2"
@@ -258,7 +258,7 @@ module "talos_cluster" {
 
 ```hcl
 module "talos_cluster" {
-  source = "github.com/yourusername/terraform-openstack-talos"
+  source = "github.com/orvis98/terraform-openstack-talos"
 
   cluster_name          = "existing-router"
   external_network_name = "ext-net"
@@ -275,7 +275,7 @@ module "talos_cluster" {
 
 ```hcl
 module "talos_cluster" {
-  source = "github.com/yourusername/terraform-openstack-talos"
+  source = "github.com/orvis98/terraform-openstack-talos"
 
   cluster_name          = "existing-subnet"
   external_network_name = "ext-net"
@@ -292,7 +292,7 @@ module "talos_cluster" {
 
 ```hcl
 module "talos_cluster" {
-  source = "github.com/yourusername/terraform-openstack-talos"
+  source = "github.com/orvis98/terraform-openstack-talos"
 
   cluster_name          = "ephemeral"
   external_network_name = "ext-net"
