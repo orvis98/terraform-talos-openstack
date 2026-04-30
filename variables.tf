@@ -159,6 +159,11 @@ variable "controlplane" {
     boot_volume_size = optional(number, 32)
     volume_type      = optional(string)
     talos_extensions = optional(list(string), [])
+    additional_volumes = optional(list(object({
+      name        = string
+      size        = number
+      volume_type = optional(string)
+    })), [])
   })
   description = <<-EOT
     Control plane configuration.
@@ -169,6 +174,16 @@ variable "controlplane" {
     - boot_volume_size: Boot volume size in GB
     - volume_type: Volume type (e.g., ssd, hdd)
     - talos_extensions: List of Talos extensions for control plane nodes
+    - additional_volumes: Extra Cinder volumes attached to every control plane
+      node. Each entry creates one volume per node and attaches it via the
+      Compute API. The module only provisions and attaches the disks; mounting
+      and formatting inside Talos is the user's responsibility (typically via
+      talos_controlplane_config_patches referencing the disk by serial/WWID,
+      since the guest device name is not stable).
+      - name: Logical name (used in the OpenStack volume name and as map key,
+        must be unique within additional_volumes)
+      - size: Volume size in GB
+      - volume_type: Volume type (e.g., ssd, hdd); defaults to the project default
 
     Common extensions:
     - siderolabs/qemu-guest-agent (included by default)
@@ -198,6 +213,18 @@ variable "controlplane" {
     condition     = var.controlplane.boot_volume_size >= 10
     error_message = "Boot volume size must be at least 10 GB."
   }
+
+  validation {
+    condition = length(var.controlplane.additional_volumes) == length(distinct([
+      for v in var.controlplane.additional_volumes : v.name
+    ]))
+    error_message = "controlplane.additional_volumes entries must have unique names."
+  }
+
+  validation {
+    condition     = alltrue([for v in var.controlplane.additional_volumes : v.size > 0])
+    error_message = "Each controlplane.additional_volumes size must be greater than 0 GB."
+  }
 }
 
 # ============================================================================
@@ -214,6 +241,11 @@ variable "workers" {
     volume_type      = optional(string)
     config_patches   = optional(list(string), [])
     talos_extensions = optional(list(string), [])
+    additional_volumes = optional(list(object({
+      name        = string
+      size        = number
+      volume_type = optional(string)
+    })), [])
   }))
   default     = {}
   description = <<-EOT
@@ -227,6 +259,12 @@ variable "workers" {
     - volume_type: Volume type (e.g., ssd, hdd)
     - config_patches: Pool-specific Talos configuration patches
     - talos_extensions: List of Talos extensions for this worker pool
+    - additional_volumes: Extra Cinder volumes attached to every node in the
+      pool. Each entry creates one volume per node and attaches it via the
+      Compute API. The module only provisions and attaches the disks; mounting
+      and formatting inside Talos is the user's responsibility (typically via
+      config_patches referencing the disk by serial/WWID, since the guest
+      device name is not stable).
 
     Example:
     workers = {
@@ -243,7 +281,25 @@ variable "workers" {
         talos_extensions = [
           "siderolabs/iscsi-tools"
         ]
+        additional_volumes = [
+          { name = "data", size = 500, volume_type = "ssd" },
+        ]
       }
     }
   EOT
+
+  validation {
+    condition = alltrue([
+      for pool, cfg in var.workers :
+      length(cfg.additional_volumes) == length(distinct([for v in cfg.additional_volumes : v.name]))
+    ])
+    error_message = "Each worker pool's additional_volumes entries must have unique names."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for pool, cfg in var.workers : [for v in cfg.additional_volumes : v.size > 0]
+    ]))
+    error_message = "Each worker additional_volumes size must be greater than 0 GB."
+  }
 }

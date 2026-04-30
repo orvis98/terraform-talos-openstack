@@ -61,6 +61,7 @@ The `controlplane` object requires these fields:
 | `boot_volume_size` | `number` | `32` | No | Boot volume size in GB (minimum 10 GB) |
 | `volume_type` | `string` | `null` | No | Volume type (e.g., ssd, hdd) |
 | `talos_extensions` | `list(string)` | `[]` | No | Talos system extensions |
+| `additional_volumes` | `list(object)` | `[]` | No | Extra Cinder volumes attached to every node (see [Additional Volumes](#additional-volumes)) |
 
 *Either `flavor_name` or `flavor_id` must be specified.
 
@@ -72,6 +73,9 @@ controlplane = {
   use_volume       = true
   boot_volume_size = 50
   talos_extensions = ["siderolabs/iscsi-tools"]
+  additional_volumes = [
+    { name = "etcd", size = 50, volume_type = "ssd" },
+  ]
 }
 ```
 
@@ -82,6 +86,7 @@ The `workers` variable is a map where each key is the pool name and the value ha
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `config_patches` | `list(string)` | `[]` | Pool-specific YAML config patches |
+| `additional_volumes` | `list(object)` | `[]` | Extra Cinder volumes attached to every node in the pool (see [Additional Volumes](#additional-volumes)) |
 
 Example:
 ```hcl
@@ -95,8 +100,27 @@ workers = {
     flavor_name      = "g1.large"
     talos_extensions = ["siderolabs/nvidia-container-toolkit"]
   }
+  storage = {
+    count       = 3
+    flavor_name = "m1.large"
+    additional_volumes = [
+      { name = "data", size = 500, volume_type = "ssd" },
+    ]
+  }
 }
 ```
+
+### Additional Volumes
+
+`additional_volumes` provisions extra Cinder volumes for each node in a control plane or worker pool and attaches them via the OpenStack Compute API. One volume is created per node per entry, named `${cluster_name}-controlplane-${index}-${name}` or `${cluster_name}-worker-${pool}-${index}-${name}`.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `name` | `string` | - | Logical name (must be unique within `additional_volumes`) |
+| `size` | `number` | - | Volume size in GB |
+| `volume_type` | `string` | `null` | Volume type (e.g., `ssd`, `hdd`); defaults to the project default |
+
+The module only provisions and attaches the disks. Mounting and formatting inside Talos is the user's responsibility — typically via `talos_controlplane_config_patches` or per-pool `config_patches` referencing the disk by **serial/WWID** (the guest device name like `/dev/vdb` is not stable across reboots).
 
 ## Outputs
 

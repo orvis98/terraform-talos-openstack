@@ -103,6 +103,39 @@ locals {
     )
   }
 
+  # Additional volumes - one volume per node per entry
+  controlplane_additional_volumes = {
+    for v in flatten([
+      for i in range(var.controlplane.count) : [
+        for vol in var.controlplane.additional_volumes : {
+          key         = "${i}-${vol.name}"
+          instance    = i
+          name        = vol.name
+          size        = vol.size
+          volume_type = vol.volume_type
+        }
+      ]
+    ]) : v.key => v
+  }
+
+  worker_additional_volumes = {
+    for v in flatten([
+      for pool_name, pool_config in var.workers : [
+        for i in range(pool_config.count) : [
+          for vol in pool_config.additional_volumes : {
+            key          = "${pool_name}-${i}-${vol.name}"
+            instance_key = "${pool_name}-${i}"
+            pool_name    = pool_name
+            instance     = i
+            name         = vol.name
+            size         = vol.size
+            volume_type  = vol.volume_type
+          }
+        ]
+      ]
+    ]) : v.key => v
+  }
+
   # Node IP addresses for Talos client configuration
   controlplane_ips = [
     for i in range(var.controlplane.count) :

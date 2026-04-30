@@ -174,6 +174,21 @@ resource "openstack_compute_instance_v2" "controlplane" {
   }
 }
 
+resource "openstack_blockstorage_volume_v3" "controlplane_additional" {
+  for_each = local.controlplane_additional_volumes
+
+  name        = "${var.cluster_name}-controlplane-${each.value.instance}-${each.value.name}"
+  size        = each.value.size
+  volume_type = each.value.volume_type
+}
+
+resource "openstack_compute_volume_attach_v2" "controlplane_additional" {
+  for_each = local.controlplane_additional_volumes
+
+  instance_id = openstack_compute_instance_v2.controlplane[each.value.instance].id
+  volume_id   = openstack_blockstorage_volume_v3.controlplane_additional[each.key].id
+}
+
 # ============================================================================
 # Load Balancer
 # ============================================================================
@@ -315,4 +330,19 @@ resource "openstack_compute_instance_v2" "workers" {
   lifecycle {
     ignore_changes = [user_data]
   }
+}
+
+resource "openstack_blockstorage_volume_v3" "workers_additional" {
+  for_each = local.worker_additional_volumes
+
+  name        = "${var.cluster_name}-worker-${each.value.pool_name}-${each.value.instance}-${each.value.name}"
+  size        = each.value.size
+  volume_type = each.value.volume_type
+}
+
+resource "openstack_compute_volume_attach_v2" "workers_additional" {
+  for_each = local.worker_additional_volumes
+
+  instance_id = openstack_compute_instance_v2.workers[each.value.instance_key].id
+  volume_id   = openstack_blockstorage_volume_v3.workers_additional[each.key].id
 }
