@@ -1,6 +1,6 @@
 {
   "name": "terraform-talos-openstack",
-  "engineVersion": "v0.19.11",
+  "engineVersion": "v0.20.6",
   "sdk": {
     "source": "go"
   },
